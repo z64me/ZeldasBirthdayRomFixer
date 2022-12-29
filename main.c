@@ -1,10 +1,10 @@
 /*
- * zroom-omit-unused-actors <z64.me>
+ * zworld-omit-unused-actors <z64.me>
  *
  * finds and deletes unused actors
- * from Zelda 64 room files
+ * from Zelda 64 scene and room files
  *
- * gcc -o zroom-omit-unused-actors \
+ * gcc -o zworld-omit-unused-actors \
  *     -Wall -Wextra -std=c99 -pedantic \
  *     main.c
  *
@@ -16,11 +16,12 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define PROGNAME "zroom-omit-unused-actors"
+#define PROGNAME "zworld-omit-unused-actors"
 #define OOT_ACTOR_TABLE_LENGTH 471
 
-// zroom header commands
+// zworld header commands
 #define CMD_ALT 0x18 // alternate headers
+#define CMD_TXA 0x0E // transition actors
 #define CMD_ACT 0x01 // actor list
 #define CMD_END 0x14 // end of header
 
@@ -144,8 +145,8 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off)
 		
 		switch (*b)
 		{
-			// actor list
-			case CMD_ACT:
+			case CMD_TXA: // transition actors
+			case CMD_ACT: // actor list
 			{
 				int num = b[1];
 				const int stride = 16;
@@ -153,13 +154,14 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off)
 				uint8_t *start = room + (addr & 0xffffff);
 				uint8_t *end = start + num * stride;
 				uint8_t *dat = start;
+				int off = (*b == CMD_TXA) ? 4 : 0;
 				
 				if (!addr || !num)
 					break;
 				
 				for (int i = 0; i < num; )
 				{
-					uint16_t overlay = BEu16(dat);
+					uint16_t overlay = BEu16(dat + off);
 					
 					if (is_overlay_excluded(overlay))
 					{
@@ -223,12 +225,13 @@ int main(int argc, char *argv[])
 	
 	if (argc != 2 && argc != 3)
 	{
-		fprintf(stderr, "args:\n" PROGNAME " \"infile.zroom\" \"outfile.zroom\"\n");
+		fprintf(stderr, "args:\n" PROGNAME " \"infile.zworld\" \"outfile.zworld\"\n");
 		fprintf(stderr, "outfile is optional; if not specified, infile is overwritten\n");
+		fprintf(stderr, "supports both scene and room files, hence zworld\n");
 		#ifdef _WIN32
 		fprintf(stderr, "simple drag-n-drop style win32 application\n");
-		fprintf(stderr, "(aka close this window and drag a zroom onto the exe)\n");
-		fprintf(stderr, "(warning: it will modify the zroom so keep a backup!)\n");
+		fprintf(stderr, "(aka close this window and drag a zworld onto the exe)\n");
+		fprintf(stderr, "(warning: it will modify the zworld so keep a backup!)\n");
 		getchar();
 		#endif
 		return -1;
