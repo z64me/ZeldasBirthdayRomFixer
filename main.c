@@ -89,7 +89,7 @@ uint32_t BEu32(const void *src)
 	return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
 }
 
-bool dma_file_exists(uint8_t *rom, uint32_t start, uint32_t end, const char *type)
+bool dma_file_exists(uint8_t *rom, uint32_t start, uint32_t end, const char *type, int index)
 {
 	uint8_t *dmaStart = rom + OOT_DMADATA_START;
 	uint8_t *dmaEnd = rom + OOT_DMADATA_END;
@@ -102,8 +102,8 @@ bool dma_file_exists(uint8_t *rom, uint32_t start, uint32_t end, const char *typ
 			if (BEu32(rom + 4) != end)
 			{
 				fprintf(stderr
-					, "%s file %08x %08x error: dmadata has different size (%08x %08x)\n"
-					, type
+					, "%s %d %08x %08x error: dmadata has different size (%08x %08x)\n"
+					, type, index
 					, start, end
 					, start, BEu32(rom + 4)
 				);
@@ -114,7 +114,7 @@ bool dma_file_exists(uint8_t *rom, uint32_t start, uint32_t end, const char *typ
 		}
 	}
 	
-	fprintf(stderr, "%s file %08x %08x error: no dma entry exists\n", type, start, end);
+	fprintf(stderr, "%s %d %08x %08x error: no dma entry exists\n", type, index, start, end);
 	return false;
 }
 
@@ -194,12 +194,12 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off, uint8_t *rom)
 				if (!addr || !num || !rom)
 					break;
 				
-				while (num--)
+				for (int i = 0; i < num; ++i)
 				{
 					uint32_t start = BEu32(dat);
 					uint32_t end = BEu32(dat + 4);
 					
-					dma_file_exists(rom, start, end, "room");
+					dma_file_exists(rom, start, end, "room", i);
 					do_header(rom + start, end - start, 0x03000000, rom);
 					
 					dat += stride;
@@ -290,7 +290,7 @@ void do_rom(uint8_t *rom, const size_t romSz)
 			continue;
 		
 		//fprintf(stderr, "do scene %08x %08x\n", start, end);
-		dma_file_exists(rom, start, end, "scene");
+		dma_file_exists(rom, start, end, "scene", (i - OOT_SCENE_TABLE_START) / spanScene);
 		do_header(rom + start, end - start, 0x02000000, rom);
 	}
 	
@@ -304,7 +304,7 @@ void do_rom(uint8_t *rom, const size_t romSz)
 		if (start == 0 || end < start || start >= romSz)
 			continue;
 		
-		dma_file_exists(rom, start, end, "object");
+		dma_file_exists(rom, start, end, "object", (i - OOT_OBJECT_TABLE_START) / spanObject);
 	}
 	
 	// sanity check actor table
@@ -317,7 +317,7 @@ void do_rom(uint8_t *rom, const size_t romSz)
 		if (start == 0 || end < start || start >= romSz)
 			continue;
 		
-		dma_file_exists(rom, start, end, "actor");
+		dma_file_exists(rom, start, end, "actor", (i - OOT_ACTOR_TABLE_START) / spanActor);
 	}
 }
 
