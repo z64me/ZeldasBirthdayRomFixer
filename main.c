@@ -18,8 +18,12 @@
 
 #define PROGNAME "zworld-omit-unused-actors"
 #define OOT_ACTOR_TABLE_LENGTH 471
+#define OOT_ACTOR_TABLE_START  0x00B8D440
+#define OOT_ACTOR_TABLE_END    0x00B90F20
 #define OOT_SCENE_TABLE_START  0x00BA0BB0
 #define OOT_SCENE_TABLE_END    0x00BA1448
+#define OOT_OBJECT_TABLE_START 0x00B9E6C8
+#define OOT_OBJECT_TABLE_END   0x00B9F358
 #define OOT_DMADATA_START      0x00012F70
 #define OOT_DMADATA_END        0x00019030
 
@@ -85,7 +89,7 @@ uint32_t BEu32(const void *src)
 	return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
 }
 
-bool dma_file_exists(uint8_t *rom, uint32_t start, uint32_t end)
+bool dma_file_exists(uint8_t *rom, uint32_t start, uint32_t end, const char *type)
 {
 	uint8_t *dmaStart = rom + OOT_DMADATA_START;
 	uint8_t *dmaEnd = rom + OOT_DMADATA_END;
@@ -98,7 +102,8 @@ bool dma_file_exists(uint8_t *rom, uint32_t start, uint32_t end)
 			if (BEu32(rom + 4) != end)
 			{
 				fprintf(stderr
-					, "file %08x %08x error: dmadata has different size (%08x %08x)\n"
+					, "%s file %08x %08x error: dmadata has different size (%08x %08x)\n"
+					, type
 					, start, end
 					, start, BEu32(rom + 4)
 				);
@@ -109,7 +114,7 @@ bool dma_file_exists(uint8_t *rom, uint32_t start, uint32_t end)
 		}
 	}
 	
-	fprintf(stderr, "file %08x %08x error: no dma entry exists\n", start, end);
+	fprintf(stderr, "%s file %08x %08x error: no dma entry exists\n", type, start, end);
 	return false;
 }
 
@@ -194,7 +199,7 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off, uint8_t *rom)
 					uint32_t start = BEu32(dat);
 					uint32_t end = BEu32(dat + 4);
 					
-					dma_file_exists(rom, start, end);
+					dma_file_exists(rom, start, end, "room");
 					do_header(rom + start, end - start, 0x03000000, rom);
 					
 					dat += stride;
@@ -270,10 +275,12 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off, uint8_t *rom)
 
 void do_rom(uint8_t *rom, const size_t romSz)
 {
-	const int span = 0x14;
+	const int spanScene = 0x14;
+	const int spanActor = 0x20;
+	const int spanObject = 0x8;
 	
 	// for each entry in the scene table
-	for (uint32_t i = OOT_SCENE_TABLE_START; i < OOT_SCENE_TABLE_END; i += span)
+	for (uint32_t i = OOT_SCENE_TABLE_START; i < OOT_SCENE_TABLE_END; i += spanScene)
 	{
 		uint8_t *dat = rom + i;
 		uint32_t start = BEu32(dat);
@@ -283,8 +290,34 @@ void do_rom(uint8_t *rom, const size_t romSz)
 			continue;
 		
 		//fprintf(stderr, "do scene %08x %08x\n", start, end);
-		dma_file_exists(rom, start, end);
+		dma_file_exists(rom, start, end, "scene");
 		do_header(rom + start, end - start, 0x02000000, rom);
+	}
+	
+	// sanity check object table
+	for (uint32_t i = OOT_OBJECT_TABLE_START; i < OOT_OBJECT_TABLE_END; i += spanObject)
+	{
+		uint8_t *dat = rom + i;
+		uint32_t start = BEu32(dat);
+		uint32_t end = BEu32(dat + 4);
+		
+		if (start == 0 || end < start || start >= romSz)
+			continue;
+		
+		dma_file_exists(rom, start, end, "object");
+	}
+	
+	// sanity check actor table
+	for (uint32_t i = OOT_ACTOR_TABLE_START; i < OOT_ACTOR_TABLE_END; i += spanActor)
+	{
+		uint8_t *dat = rom + i;
+		uint32_t start = BEu32(dat);
+		uint32_t end = BEu32(dat + 4);
+		
+		if (start == 0 || end < start || start >= romSz)
+			continue;
+		
+		dma_file_exists(rom, start, end, "actor");
 	}
 }
 
