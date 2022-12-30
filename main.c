@@ -115,7 +115,7 @@ bool is_header(uint8_t *room, const size_t roomSz, uint32_t off)
 	const uint8_t pat[8] = { CMD_END }; // bigendian bytes 14000000 00000000
 	uint32_t end = (off & 0xffffff) + 0x80; // a forgiving header length
 	
-	if ((off & 3) || ((off >> 24) != 0x03))
+	if ((off & 3) || (((off >> 24) != 0x03) && ((off >> 24) != 0x02)))
 		return false;
 	
 	// bounds safety
