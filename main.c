@@ -18,11 +18,14 @@
 
 #define PROGNAME "zworld-omit-unused-actors"
 #define OOT_ACTOR_TABLE_LENGTH 471
+#define OOT_SCENE_TABLE_START  0x00BA0BB0
+#define OOT_SCENE_TABLE_END    0x00BA1448
 
 // zworld header commands
 #define CMD_ALT 0x18 // alternate headers
 #define CMD_TXA 0x0E // transition actors
 #define CMD_ACT 0x01 // actor list
+#define CMD_RFL 0x04 // room file list
 #define CMD_END 0x14 // end of header
 
 /* minimal file loader
@@ -131,7 +134,7 @@ bool is_header(uint8_t *room, const size_t roomSz, uint32_t off)
 	return false;
 }
 
-bool do_header(uint8_t *room, const size_t roomSz, uint32_t off)
+bool do_header(uint8_t *room, const size_t roomSz, uint32_t off, uint8_t *rom)
 {
 	uint8_t *roomEnd = room + roomSz;
 	const int stride = 8;
@@ -145,6 +148,29 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off)
 		
 		switch (*b)
 		{
+			// room file list
+			case CMD_RFL:
+			{
+				int num = b[1];
+				const int stride = 8;
+				uint32_t addr = BEu32(b + 4);
+				uint8_t *dat = room + (addr & 0xffffff);
+				
+				if (!addr || !num || !rom)
+					break;
+				
+				while (num--)
+				{
+					uint32_t start = BEu32(dat);
+					uint32_t end = BEu32(dat + 4);
+					
+					do_header(rom + start, end - start, 0x03000000, rom);
+					
+					dat += stride;
+				}
+				break;
+			}
+			
 			case CMD_TXA: // transition actors
 			case CMD_ACT: // actor list
 			{
@@ -194,7 +220,7 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off)
 					addr = BEu32(dat);
 					
 					// skip addresses 00000000, parse all others
-					if (addr && !do_header(room, roomSz, addr))
+					if (addr && !do_header(room, roomSz, addr, rom))
 						break;
 					
 					dat += 4;
@@ -209,6 +235,25 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off)
 	}
 	
 	return true;
+}
+
+void do_rom(uint8_t *rom, const size_t romSz)
+{
+	const int span = 0x14;
+	
+	// for each entry in the scene table
+	for (uint32_t i = OOT_SCENE_TABLE_START; i < OOT_SCENE_TABLE_END; i += span)
+	{
+		uint8_t *dat = rom + i;
+		uint32_t start = BEu32(dat);
+		uint32_t end = BEu32(dat + 4);
+		
+		if (start == 0 || end < start || start >= romSz)
+			continue;
+		
+		fprintf(stderr, "do scene %08x %08x\n", start, end);
+		do_header(rom + start, end - start, 0x02000000, rom);
+	}
 }
 
 int main(int argc, char *argv[])
@@ -243,7 +288,14 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	
-	do_header(room, roomSz, 0x03000000);
+	if (is_header(room, roomSz, 0x03000000))
+	{
+		do_header(room, roomSz, 0x03000000, 0);
+	}
+	else if (roomSz > OOT_SCENE_TABLE_END)
+	{
+		do_rom(room, roomSz);
+	}
 	
 	if (!savefile(ofn, room, roomSz))
 	{
