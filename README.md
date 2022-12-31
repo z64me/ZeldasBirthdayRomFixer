@@ -10,6 +10,8 @@ It fixes scene and room files by recursively stepping through all actor layouts 
 
 ### Actor overlay file fixes
 
+The original author's game code was preserved when possible. In cases where they introduced unstable changes, the modified code was disassembled and carefully inspected to figure out its intent, and substituted with functionally equivalent code that doesn't crash the game.
+
 #### En_Sa (Saria)
 
 Saria's actor is hard-coded to play a cutscene when you first enter Kokiri Forest. The author of Zelda's Birthday turned this behavior off by zeroing out some opcodes. The original changes render the game unplayable on hardware and most emulators, so a new solution was engineered. The new solution involves having [this function](https://github.com/zeldaret/oot/blob/e37b9934837ec96304a3ef9576d8d283cfa0f7bb/src/overlays/actors/ovl_En_Sa/z_en_sa.c#L383) return `3` in cases where it would otherwise return `4`, effectively disabling the cutscene without breaking anything.
