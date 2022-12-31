@@ -1,10 +1,12 @@
 /*
- * zworld-omit-unused-actors <z64.me>
+ * Zelda's Birthday ROM Fixer <z64.me>
  *
- * finds and deletes unused actors
- * from Zelda 64 scene and room files
+ * This ad hoc utility was thrown together to quickly fix
+ * miscellaneous files from an ancient Zelda 64 mod titled
+ * Zelda's Birthday so it can be played on a wider variety
+ * of emulators, as well as on real Nintendo hardware.
  *
- * gcc -o zworld-omit-unused-actors \
+ * gcc -o ZeldasBirthdayRomFixer \
  *     -Wall -Wextra -std=c99 -pedantic \
  *     main.c
  *
@@ -16,7 +18,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define PROGNAME "zworld-omit-unused-actors"
+#define PROGNAME "ZeldasBirthdayRomFixer"
 #define OOT_ACTOR_TABLE_LENGTH 471
 #define OOT_ACTOR_TABLE_START  0x00B8D440
 #define OOT_ACTOR_TABLE_END    0x00B90F20
@@ -648,10 +650,11 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "args:\n" PROGNAME " \"infile.zworld\" \"outfile.zworld\"\n");
 		fprintf(stderr, "outfile is optional; if not specified, infile is overwritten\n");
 		fprintf(stderr, "supports both scene and room files, hence zworld\n");
+		fprintf(stderr, "misc fixes are applied if you throw a rom at it (recommended)\n");
 		#ifdef _WIN32
 		fprintf(stderr, "simple drag-n-drop style win32 application\n");
 		fprintf(stderr, "(aka close this window and drag a zworld onto the exe)\n");
-		fprintf(stderr, "(warning: it will modify the zworld so keep a backup!)\n");
+		fprintf(stderr, "(warning: it will modify the input file, keep a backup!)\n");
 		getchar();
 		#endif
 		return -1;
