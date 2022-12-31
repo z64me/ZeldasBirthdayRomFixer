@@ -612,6 +612,21 @@ void do_rom(uint8_t *rom, const size_t romSz)
 		dma_file_exists(rom, start, end, "actor", (i - OOT_ACTOR_TABLE_START) / spanActor);
 	}
 	
+	// misc patches...
+	{
+		// saria crash fix
+		{
+			uint8_t *saria = rom + 0x00EAB540;
+			
+			// restore original assembly
+			wBEu32(saria + 0xD98 + 0, 0x3C0E8016); // lui t6, 0x8016
+			wBEu32(saria + 0xD98 + 4, 0xA6000210); // sh r0, 0x0210(s0)
+			
+			// disable Kokiri Forest cutscene
+			wBEu32(saria + 0x9C4, 0x24020003); // addiu v0, r0, 0x0003 ; make branch 4 function same as branch 3
+		}
+	}
+	
 	// update crc checksum
 	n64crc(rom);
 }
