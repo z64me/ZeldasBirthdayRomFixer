@@ -6,7 +6,13 @@ This ad hoc utility was thrown together to quickly fix miscellaneous files from 
 
 ### Scene and room file fixes
 
+#### General (systemwide)
+
 It fixes scene and room files by recursively stepping through all actor layouts and deleting references to nonexistent overlay IDs, which are very error-prone.
+
+#### House of Skulltula
+
+The skybox was set to a value that was causing a crash. As it can't be seen anyway, it was turned off.
 
 ### Actor overlay file fixes
 
