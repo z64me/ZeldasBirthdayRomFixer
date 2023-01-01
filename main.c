@@ -18,6 +18,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "include/incbin.h"
+
 #define PROGNAME "ZeldasBirthdayRomFixer"
 #define OOT_ACTOR_TABLE_LENGTH 471
 #define OOT_ACTOR_TABLE_START  0x00B8D440
@@ -40,6 +42,10 @@
 #define CMD_ACT 0x01 // actor list
 #define CMD_RFL 0x04 // room file list
 #define CMD_END 0x14 // end of header
+
+// misc payloads
+#define PLDIR "include/"
+INCBIN(EagleCollisionPayload, PLDIR "eagle-collision-payload.bin");
 
 //
 //
@@ -459,6 +465,22 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off, uint8_t *rom)
 			room[0x56] = 0x00;
 			
 			fprintf(stderr, "applying spider house patch\n");
+		}
+	}
+	
+	// XXX hard-coded Eagle Labyrinth dungeon fixes
+	if (roomSz == 0x1A7D0 && (room - rom) == 0x3913000)
+	{
+		// replace old collision with custom collision
+		// (loading time improved from 18 seconds to 1 second)
+		{
+			fprintf(stderr, "applying eagle labyrinth patch\n");
+			
+			// inject custom collision data
+			memcpy(room + 0x460, gEagleCollisionPayloadData, gEagleCollisionPayloadSize);
+			
+			// update header to reference new collision data
+			wBEu32(room + 0x24, 0x02002FDC);
 		}
 	}
 	
