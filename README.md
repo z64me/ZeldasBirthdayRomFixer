@@ -19,3 +19,10 @@ Saria's actor is hard-coded to play a cutscene when you first enter Kokiri Fores
 ### DMA table fixes (`dmadata`)
 
 Many files are not referenced by the DMA table because they were either resized, relocated, or not originally part of the game. The absence of entries for these files does not usually cause issues, but there are cases where it may, and it prevents the game from having its filesystem compressed.
+
+## Credits
+
+- [@z64me](https://github.com/z64me) - this program, finding bugs, fixing bugs
+- [@Zeldaboy14](https://github.com/Zeldaboy14) - finding bugs, fixing bugs
+- [@ThreePendants](https://github.com/ThreePendants) - finding bugs, fixing bugs
+- [@AriaHiro64](https://github.com/AriaHiro64) - finding bugs
