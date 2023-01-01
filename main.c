@@ -431,16 +431,16 @@ bool is_header(uint8_t *room, const size_t roomSz, uint32_t off)
 	return false;
 }
 
-bool do_header(uint8_t *room, const size_t roomSz, uint32_t off, uint8_t *rom)
+bool do_header(uint8_t *room, size_t *roomSz, uint32_t off, uint8_t *rom)
 {
-	uint8_t *roomEnd = room + roomSz;
+	uint8_t *roomEnd = room + *roomSz;
 	const int stride = 8;
 	
-	if (!is_header(room, roomSz, off))
+	if (!is_header(room, *roomSz, off))
 		return false;
 	
 	// XXX hard-coded spider house fix
-	if (roomSz == 0xfe40)
+	if (*roomSz == 0xfe40)
 	{
 		const uint8_t spider[] = {
 			0x15, 0x05, 0x00, 0x00, 0x00, 0x00, 0x13, 0x1C, 0x04, 0x06, 0x00, 0x00,
@@ -469,7 +469,7 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off, uint8_t *rom)
 	}
 	
 	// XXX hard-coded Eagle Labyrinth dungeon fixes
-	if (roomSz == 0x1A7D0 && (room - rom) == 0x3913000)
+	if (*roomSz == 0x1A7D0 && (room - rom) == 0x3913000)
 	{
 		// replace old collision with custom collision
 		// (loading time improved from 18 seconds to 1 second)
@@ -481,10 +481,13 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off, uint8_t *rom)
 			
 			// update header to reference new collision data
 			wBEu32(room + 0x24, 0x02002FDC);
+			
+			// shrink scene file
+			*roomSz = 0x3010;
 		}
 	}
 	
-	for (off &= 0xffffff; off <= roomSz - stride; off += stride)
+	for (off &= 0xffffff; off <= *roomSz - stride; off += stride)
 	{
 		uint8_t *b = room + off;
 		
@@ -505,9 +508,12 @@ bool do_header(uint8_t *room, const size_t roomSz, uint32_t off, uint8_t *rom)
 				{
 					uint32_t start = BEu32(dat);
 					uint32_t end = BEu32(dat + 4);
+					size_t sz = end - start;
 					
-					dma_file_exists(rom, start, end, "room", i);
-					do_header(rom + start, end - start, 0x03000000, rom);
+					do_header(rom + start, &sz, 0x03000000, rom);
+					
+					// possible resize
+					dma_file_exists(rom, start, start + sz, "room", i);
 					
 					dat += stride;
 				}
@@ -601,13 +607,19 @@ void do_rom(uint8_t *rom, const size_t romSz)
 		uint8_t *dat = rom + i;
 		uint32_t start = BEu32(dat);
 		uint32_t end = BEu32(dat + 4);
+		size_t sz = end - start;
 		
 		if (start == 0 || end < start || start >= romSz)
 			continue;
 		
 		//fprintf(stderr, "do scene %08x %08x\n", start, end);
-		dma_file_exists(rom, start, end, "scene", (i - OOT_SCENE_TABLE_START) / spanScene);
-		do_header(rom + start, end - start, 0x02000000, rom);
+		do_header(rom + start, &sz, 0x02000000, rom);
+		
+		// possible resize
+		dma_file_exists(rom, start, start + sz, "scene", (i - OOT_SCENE_TABLE_START) / spanScene);
+		
+		// overwrite file end, in case of resize
+		wBEu32(dat + 4, start + sz);
 	}
 	
 	// sanity check object table
@@ -690,7 +702,7 @@ int main(int argc, char *argv[])
 	
 	if (is_header(room, roomSz, 0x03000000))
 	{
-		do_header(room, roomSz, 0x03000000, 0);
+		do_header(room, &roomSz, 0x03000000, 0);
 	}
 	else if (roomSz > OOT_SCENE_TABLE_END)
 	{
