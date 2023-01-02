@@ -489,7 +489,7 @@ bool do_header(uint8_t *room, size_t *roomSz, uint32_t off, uint8_t *rom)
 		// (loading time improved from 18 seconds to 1 second)
 		if (*roomSz == 0x1A7D0 && (room - rom) == 0x3913000)
 		{
-			fprintf(stderr, "applying eagle labyrinth patch\n");
+			fprintf(stderr, "applying eagle labyrinth collision patch\n");
 			
 			// inject custom collision data
 			memcpy(room + 0x460, gEagleCollisionPayloadData, gEagleCollisionPayloadSize);
@@ -511,6 +511,7 @@ bool do_header(uint8_t *room, size_t *roomSz, uint32_t off, uint8_t *rom)
 		// room11: replace ladder
 		if (*roomSz == 0x47e0 && (room - rom) == 0x03986000 && room[0x31] == 0x15)
 		{
+			fprintf(stderr, "applying eagle labyrinth room 11 ladder patch\n");
 			wBEu16(room + 0x4670, PL_LADDER_ACTOR_ID);
 			wBEu16(room + 0x46, PL_LADDER_OBJECT_ID);
 		}
@@ -667,7 +668,10 @@ void do_rom(uint8_t *rom, const size_t romSz)
 		{
 			// inject custom ladder object payload
 			if (idx == PL_LADDER_OBJECT_ID)
+			{
+				fprintf(stderr, "injecting custom ladder object\n");
 				memcpy(rom + start, gLadderObjectPayloadData, (sz = gLadderObjectPayloadSize));
+			}
 		}
 		
 		if (start == 0 || end < start || start >= romSz)
@@ -696,6 +700,7 @@ void do_rom(uint8_t *rom, const size_t romSz)
 					0x80, 0xB9, 0x59, 0xD0, 0x80, 0xB9, 0x60, 0xD0, 0x00, 0x00, 0x00, 0x00,
 					0x80, 0xB9, 0x5F, 0xB0, 0x80, 0x13, 0x82, 0xD4, 0x00, 0x00, 0x00, 0x00
 				};
+				fprintf(stderr, "injecting custom ladder actor\n");
 				memcpy(dat + 8, addrs, sizeof(addrs));
 				memcpy(rom + start, gLadderActorPayloadData, (sz = gLadderActorPayloadSize));
 				wBEu16(rom + start + 0x5E8, PL_LADDER_OBJECT_ID);
