@@ -452,7 +452,8 @@ bool do_header(uint8_t *room, size_t *roomSz, uint32_t off, uint8_t *rom)
 	if (!is_header(room, *roomSz, off))
 		return false;
 	
-	// XXX hard-coded spider house fix
+	#if 0 // XXX hard-coded spider house fix
+	// was once required but now the rom is stable without it
 	if (*roomSz == 0xfe40)
 	{
 		const uint8_t spider[] = {
@@ -480,6 +481,7 @@ bool do_header(uint8_t *room, size_t *roomSz, uint32_t off, uint8_t *rom)
 			fprintf(stderr, "applying spider house patch\n");
 		}
 	}
+	#endif
 	
 	// XXX hard-coded Eagle Labyrinth dungeon fixes
 	{
