@@ -16,6 +16,12 @@ It fixes scene and room files by recursively stepping through all actor layouts 
 
 Update: This fix is no longer necessary?
 
+#### Eagle Labyrinth
+
+One feature that made Zelda's Birthday such a historical milestone in our community was the inclusion of a custom dungeon. Because this dungeon predates all software for importing custom models into the game, its collision data was cleverly crafted by stitching multiple copies of the Fire Temple's entrance room together on a large grid. [Unused staircases hidden beneath the floors of every room](img/eagle-staircases.gif) contribute to an excruciatingly slow load time of approximately 20 seconds. Modern tools were used to create [a new, optimized collision mesh](img/eagle-optimized.png), significantly reducing the load time. Players are no longer left wondering whether the game has frozen, as it takes only a second or two to load into the scene.
+
+Additionally, one room in this dungeon had an actor dependency that was causing a crash. Once it was narrowed down the the ladder actor specifically, a graphically and functionally equivalent replacement was created.
+
 ### Actor overlay file fixes
 
 The original author's game code was preserved when possible. In cases where they introduced unstable changes, the modified code was disassembled and carefully inspected to figure out its intent, and substituted with functionally equivalent code that doesn't crash the game.
