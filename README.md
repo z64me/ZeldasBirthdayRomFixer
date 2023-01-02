@@ -12,7 +12,9 @@ It fixes scene and room files by recursively stepping through all actor layouts 
 
 #### House of Skulltula
 
-The skybox was set to a value that was causing a crash. As it can't be seen anyway, it was turned off.
+~~Indoor lighting mode was causing a crash. The scene's lighting mode was set to outdoor lighting to remedy the problem.~~
+
+Update: This fix is no longer necessary?
 
 ### Actor overlay file fixes
 
