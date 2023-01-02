@@ -40,12 +40,17 @@
 #define CMD_ALT 0x18 // alternate headers
 #define CMD_TXA 0x0E // transition actors
 #define CMD_ACT 0x01 // actor list
+#define CMD_OBJ 0x0B // object list
 #define CMD_RFL 0x04 // room file list
 #define CMD_END 0x14 // end of header
 
 // misc payloads
 #define PLDIR "include/"
 INCBIN(EagleCollisionPayload, PLDIR "eagle-collision-payload.bin");
+INCBIN(LadderActorPayload, PLDIR "ladder-actor-payload.bin");
+INCBIN(LadderObjectPayload, PLDIR "ladder-object-payload.bin");
+#define PL_LADDER_ACTOR_ID 0x00E2
+#define PL_LADDER_OBJECT_ID 0x013F
 
 //
 //
@@ -315,6 +320,14 @@ void wBEu32(void *dst, uint32_t v)
 	b[3] = v;
 }
 
+void wBEu16(void *dst, uint16_t v)
+{
+	uint8_t *b = dst;
+	
+	b[0] = v >> 8;
+	b[1] = v;
+}
+
 void dma_file_add(uint8_t *rom, uint32_t start, uint32_t end)
 {
 	uint8_t *dmaStart = rom + OOT_DMADATA_START;
@@ -469,10 +482,10 @@ bool do_header(uint8_t *room, size_t *roomSz, uint32_t off, uint8_t *rom)
 	}
 	
 	// XXX hard-coded Eagle Labyrinth dungeon fixes
-	if (*roomSz == 0x1A7D0 && (room - rom) == 0x3913000)
 	{
 		// replace old collision with custom collision
 		// (loading time improved from 18 seconds to 1 second)
+		if (*roomSz == 0x1A7D0 && (room - rom) == 0x3913000)
 		{
 			fprintf(stderr, "applying eagle labyrinth patch\n");
 			
@@ -484,6 +497,20 @@ bool do_header(uint8_t *room, size_t *roomSz, uint32_t off, uint8_t *rom)
 			
 			// shrink scene file
 			*roomSz = 0x3010;
+			
+			// quick warp to room11
+			if (false)
+			{
+				wBEu32(room + 0x2D8, 0x03986000);
+				wBEu32(room + 0x2D8 + 4, 0x0398A7E0);
+			}
+		}
+		
+		// room11: replace ladder
+		if (*roomSz == 0x47e0 && (room - rom) == 0x03986000 && room[0x31] == 0x15)
+		{
+			wBEu16(room + 0x4670, PL_LADDER_ACTOR_ID);
+			wBEu16(room + 0x46, PL_LADDER_OBJECT_ID);
 		}
 	}
 	
@@ -519,6 +546,9 @@ bool do_header(uint8_t *room, size_t *roomSz, uint32_t off, uint8_t *rom)
 				}
 				break;
 			}
+			
+			case CMD_OBJ: // object list patching
+				break;
 			
 			case CMD_TXA: // transition actors
 			case CMD_ACT: // actor list
@@ -628,11 +658,22 @@ void do_rom(uint8_t *rom, const size_t romSz)
 		uint8_t *dat = rom + i;
 		uint32_t start = BEu32(dat);
 		uint32_t end = BEu32(dat + 4);
+		uint32_t sz = end - start;
+		int idx = (i - OOT_OBJECT_TABLE_START) / spanObject;
+		
+		// XXX object payloads
+		{
+			// inject custom ladder object payload
+			if (idx == PL_LADDER_OBJECT_ID)
+				memcpy(rom + start, gLadderObjectPayloadData, (sz = gLadderObjectPayloadSize));
+		}
 		
 		if (start == 0 || end < start || start >= romSz)
 			continue;
 		
-		dma_file_exists(rom, start, end, "object", (i - OOT_OBJECT_TABLE_START) / spanObject);
+		dma_file_exists(rom, start, start + sz, "object", idx);
+		wBEu32(dat, start);
+		wBEu32(dat + 4, start + sz);
 	}
 	
 	// sanity check actor table
@@ -641,11 +682,30 @@ void do_rom(uint8_t *rom, const size_t romSz)
 		uint8_t *dat = rom + i;
 		uint32_t start = BEu32(dat);
 		uint32_t end = BEu32(dat + 4);
+		uint32_t sz = end - start;
+		int idx = (i - OOT_ACTOR_TABLE_START) / spanActor;
+		
+		// XXX actor overlay payloads
+		{
+			// inject custom ladder actor payload
+			if (idx == PL_LADDER_ACTOR_ID)
+			{
+				const unsigned char addrs[24] = {
+					0x80, 0xB9, 0x59, 0xD0, 0x80, 0xB9, 0x60, 0xD0, 0x00, 0x00, 0x00, 0x00,
+					0x80, 0xB9, 0x5F, 0xB0, 0x80, 0x13, 0x82, 0xD4, 0x00, 0x00, 0x00, 0x00
+				};
+				memcpy(dat + 8, addrs, sizeof(addrs));
+				memcpy(rom + start, gLadderActorPayloadData, (sz = gLadderActorPayloadSize));
+				wBEu16(rom + start + 0x5E8, PL_LADDER_OBJECT_ID);
+			}
+		}
 		
 		if (start == 0 || end < start || start >= romSz)
 			continue;
 		
-		dma_file_exists(rom, start, end, "actor", (i - OOT_ACTOR_TABLE_START) / spanActor);
+		dma_file_exists(rom, start, start + sz, "actor", idx);
+		wBEu32(dat, start);
+		wBEu32(dat + 4, start + sz);
 	}
 	
 	// misc patches...
