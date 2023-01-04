@@ -728,6 +728,29 @@ void do_rom(uint8_t *rom, const size_t romSz)
 			// disable Kokiri Forest cutscene
 			wBEu32(saria + 0x9C4, 0x24020003); // addiu v0, r0, 0x0003 ; make branch 4 function same as branch 3
 		}
+		
+		// ganon battle fixes
+		{
+			fprintf(stderr, "applying ganon battle fixes\n");
+			
+			// update rauru cutscene to use function 0x5e
+			// (aka so it jumps to ENTR_SPOT20_1)
+			rom[0x2B0D681] = 0x5e;
+			
+			// update entrance ENTR_SPOT20_1 aka 0x2ae
+			// to point to ganon battle
+			for (int i = 0; i < 4; ++i)
+				wBEu32(rom + 0xB9FE18 + i * 4, 0x4f004183);
+			
+			// restore missing zelda object in ganon battle
+			rom[0x353f031] = 0x08;
+			rom[0x353f064] = 0x00;
+			rom[0x353f064 + 1] = 0x60;
+			
+			// skip first ganon battle arena cutscene
+			wBEu32(rom + 0x3536328 + 0, 0x00760000);
+			wBEu32(rom + 0x3536328 + 4, 0x00010001);
+		}
 	}
 	
 	// update crc checksum
