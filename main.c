@@ -750,6 +750,20 @@ void do_rom(uint8_t *rom, const size_t romSz)
 			// skip first ganon battle arena cutscene
 			wBEu32(rom + 0x3536328 + 0, 0x00760000);
 			wBEu32(rom + 0x3536328 + 4, 0x00010001);
+			
+			// now hide zelda using a more stable method
+			{
+				uint8_t *zl3 = rom + 0xF090B0;
+				
+				for (int i = 0; i < 4; ++i)
+				{
+					// make ctor/dtor/main/draw do nothing
+					wBEu32(zl3 + 0x71D4 + i * 4, 0x80035118);
+					
+					// also ensure their addresses won't be relocated
+					wBEu32(zl3 + 0x838C + i * 4, 0x82000184);
+				}
+			}
 		}
 	}
 	
