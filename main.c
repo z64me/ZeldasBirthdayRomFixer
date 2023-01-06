@@ -513,7 +513,8 @@ bool do_header(uint8_t *room, size_t *roomSz, uint32_t off, uint8_t *rom)
 		{
 			fprintf(stderr, "applying eagle labyrinth room 11 ladder patch\n");
 			wBEu16(room + 0x4670, PL_LADDER_ACTOR_ID);
-			wBEu16(room + 0x46, PL_LADDER_OBJECT_ID);
+			wBEu16(room + 0x50, PL_LADDER_OBJECT_ID);
+			room[0x29] = 0x09;
 		}
 	}
 	
