@@ -765,6 +765,15 @@ void do_rom(uint8_t *rom, const size_t romSz)
 					wBEu32(zl3 + 0x838C + i * 4, 0x82000184);
 				}
 			}
+			
+			// and mute zelda's voice
+			{
+				uint32_t off[] = { 0x28a6c0, 0x28dd00, 0x28eaA0, 0x289720, 0x28ba90 };
+				uint32_t sz[] = { 0x13cc, 0xD92, 0x161e, 0xf9c, 0x226c };
+				
+				for (int i = 0; i < 5; ++i)
+					memset(rom + off[i], 0, sz[i]);
+			}
 		}
 	}
 	
