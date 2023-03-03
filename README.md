@@ -39,4 +39,5 @@ Many files are not referenced by the DMA table because they were either resized,
 - [@z64me](https://github.com/z64me) - this program, finding bugs, fixing bugs
 - [@Zeldaboy14](https://github.com/Zeldaboy14) - finding bugs, fixing bugs
 - [@ThreePendants](https://github.com/ThreePendants) - finding bugs, fixing bugs
+- [Edwin Bruce Shankle IV](https://www.youtube.com/c/BruceShankle) - finding bugs
 - [@AriaHiro64](https://github.com/AriaHiro64) - finding bugs
